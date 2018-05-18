@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Spyder Editor
+seir-sim
 
-This is a temporary script file.
+Simulates dynamics of infectious diseases on a contact network using a 
+discretized SEIR model
 """
 
 import networkx as nx
@@ -136,18 +137,40 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
         if logSim:
             simStates.append(simState)
             
-    return simStates,tallyStats
+    return simStates,np.array(tallyStats)
 
-#WIP
+
 def recordTallyStats(t,simState,fList,results):
+    '''
+    Helper function thats calls all tally functions passed to the simulation
+    
+    Parameters:
+        t: time index of the simulation
+        simState: state of the simulation at time t
+        fList: list of functions which take a simState as input and return a 
+            scalar
+        results: the list of tally statistics maintained by the simulation
+    '''
     tResults = []
     for f in fList:
         tResults.append(f(simState))
     results.append(tResults)
     return results
-        
-                        
-            
+                            
+def numNodesInState(state):
+    '''
+    Decorator function for creating tally statistics for nodes in
+    a certain state
+    '''
+    def numNodesInState_(simState):
+        '''
+        Tally statistic which computes the number of nodes in state at time t
+        '''
+        n = len(simState[0])
+        return np.sum(np.where(simState[0]==state,np.ones(n),np.zeros(n)))
+    
+    return numNodesInState_
+
 numNodes = 100
 numEdges = 400
 
@@ -158,15 +181,11 @@ recoveryRate = .5
 G = generateRandomGraph(numNodes, numEdges)
 
 log,stats = seirSim(G,exposureRate,infectionRate,recoveryRate,logSim=True, 
-              tallyFuncs=[numInfectedNodes])
-        
-    
-    
-def numInfectedNodes(simState):
-    n = len(simState[0])
-    return np.sum(np.where(simState[0]==2,np.ones(n),np.zeros(n)))
-    
-    
+              tallyFuncs=[numNodesInState(0),numNodesInState(1),
+                          numNodesInState(2),numNodesInState(3)])
+
+plt.plot(range(len(log)-1),stats[:,0],stats[:,1],stats[:,2],stats[:,3])
+plt.legend(['Susceptible','Exposed','Infected','Recovered'],loc='upper left')
     
     
     
