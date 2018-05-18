@@ -129,18 +129,23 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
                 if newRemovedNode in edge:
                     siList.remove(edge)
         
+        simState = [nodeStates,siList]
         if useTally:
-            recordTallyStats(t,tallyFuncs,tallyStats)
+            tallyStats = recordTallyStats(t,simState,tallyFuncs,tallyStats)
             
         if logSim:
-            simStates.append(nodeStates.copy())
+            simStates.append(simState)
             
-    return simStates
+    return simStates,tallyStats
 
 #WIP
-def recordTallyStats(t,fList,results):
+def recordTallyStats(t,simState,fList,results):
+    tResults = []
     for f in fList:
-        results.add(f())
+        tResults.append(f(simState))
+    results.append(tResults)
+    return results
+        
                         
             
 numNodes = 100
@@ -152,17 +157,14 @@ recoveryRate = .5
 
 G = generateRandomGraph(numNodes, numEdges)
 
-log = seirSim(G,exposureRate,infectionRate,recoveryRate,logSim=True)
+log,stats = seirSim(G,exposureRate,infectionRate,recoveryRate,logSim=True, 
+              tallyFuncs=[numInfectedNodes])
         
     
     
-def numInfectedNodes(log):
-    n = len(log[0])
-    arr = np.zeros(len(log))
-    for i in range(len(log)):
-        onesArr = np.where(log[i]==2,np.ones(n),np.zeros(n))
-        arr[i] = np.sum(onesArr)
-    return arr
+def numInfectedNodes(simState):
+    n = len(simState[0])
+    return np.sum(np.where(simState[0]==2,np.ones(n),np.zeros(n)))
     
     
     
