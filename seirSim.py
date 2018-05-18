@@ -70,15 +70,25 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
     
     
     print('init::::::'+str(len(infectiousList)))
-    #Simulation tick loop (while there are still nodes which can be infected)
+    #Simulation tick loop
     while (len(siList) > 0):
         
         t = t + 1 
         
+        #True if an exposure event is possible
+        expPossible = 1 if len(siList) > 0 else 0
+        #True if an recovery event is possible
+        recPossible = 1 if len(infectiousList) > 0 else 0
+        #True if an infection event is possible
+        infPossible = 1 if len(exposedList) > 0 else 0
+            
+        
         #Calculate transition probabilities
-        probDenom = expRate*len(siList)+infRate*len(exposedList)+recRate*len(infectiousList)
-        probSE = expRate*len(siList)/probDenom
-        probEI = infRate*len(exposedList)/probDenom
+        #We exclude terms from the denominator if the corresponding event is
+        #not possible
+        probDenom = expPossible*expRate*len(siList)+infPossible*infRate*len(exposedList)+recPossible*recRate*len(infectiousList)
+        probSE = expPossible*expRate*len(siList)/probDenom
+        probEI = infPossible*infRate*len(exposedList)/probDenom
         
         x = random()
         
@@ -118,7 +128,7 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
                         
             nodeStates[newInfectedNode] = 2
         
-        elif (len(infectiousList) > 0):
+        elif (recPossible):
             #I-R algorithm
             #Choose a random infectious node to remove
             newRemovedNode = choice(infectiousList)
@@ -171,11 +181,11 @@ def numNodesInState(state):
     
     return numNodesInState_
 
-numNodes = 100
-numEdges = 400
+numNodes = 1000
+numEdges = 4000
 
-exposureRate = 10
-infectionRate = 15
+exposureRate = 5
+infectionRate = .5
 recoveryRate = .5
 
 G = generateRandomGraph(numNodes, numEdges)
@@ -184,8 +194,9 @@ log,stats = seirSim(G,exposureRate,infectionRate,recoveryRate,logSim=True,
               tallyFuncs=[numNodesInState(0),numNodesInState(1),
                           numNodesInState(2),numNodesInState(3)])
 
-plt.plot(range(len(log)-1),stats[:,0],stats[:,1],stats[:,2],stats[:,3])
-plt.legend(['Susceptible','Exposed','Infected','Recovered'],loc='upper left')
+for i in range(4):
+    plt.plot(range(len(log)-1),stats[:,i])
+plt.legend(['Susceptible','Exposed','Infected','Recovered'],loc='upper right')
     
     
     
