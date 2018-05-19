@@ -10,21 +10,43 @@ import networkx as nx
 from random import random,choice
 import numpy as np
 
-def generateRandomGraph(numNodes, numEdges):
+def generateRandomGraph(numNodes, numEdges=None, degreeDist=None):
+    '''
+    Generates a random graph G with given number of Nodes and either the given
+    number of edges, or nodes with the given degree distribution
+    
+    Parameters:
+        numNodes: The number of nodes on G
+        numEdges (optional): The number of edges on G
+        degreeDist (optional): The cumulative distribution function F giving the
+            probability that a node N has degree D <= x. Takes the form of a 
+            list of a 2D numpy array, where the 0th column are values x which 
+            can be taken on by D, and 1st column are the P(D<=x)
+    
+    Returns:
+        G: A networkx graph
+    '''
     G = nx.Graph()
 
     for i in range(numNodes):
         G.add_node(i)
 
-
-    for i in range(numEdges):
-        u,v = choice(range(numNodes)),choice(range(numNodes))
-        edges = G.edges()
+    if (numEdges is None and degreeDist is None):
+        raise Exception('You must provide a number or edges or degree distribution')
         
-        while u==v or (u,v) in edges or (v,u) in edges:
-            u,v = choice(range(numNodes)),choice(range(numNodes))    
-        G.add_edge(u,v)
-    
+    elif (not numEdges is None):
+        for i in range(numEdges):
+            u,v = choice(range(numNodes)),choice(range(numNodes))
+            edges = G.edges()
+            
+            while u==v or (u,v) in edges or (v,u) in edges:
+                u,v = choice(range(numNodes)),choice(range(numNodes))    
+            G.add_edge(u,v)
+            
+    if (not degreeDist is None):
+        x = random()
+        
+        
     return G
 
 def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
@@ -75,7 +97,7 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
     
     print('Beginning simulation...')
     #Simulation tick loop
-    while (len(siList) > 0):
+    while (len(siList) + len(exposedList) > 0):
         
         t = t + 1 
         
@@ -113,7 +135,7 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
             nodeStates[newExposedNode] = 1
 
         
-        elif (x >= probSE and x < probEI):
+        elif (x >= probSE and x < probEI+probSE):
             #E->I algorithm
             #Choose a random exposed node to become infectious
             newInfectedNode = choice(exposedList)
@@ -129,7 +151,7 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
                         if ((edge[1],newInfectedNode) in siList):    
                             siList.remove((edge[1],newInfectedNode))
                     #If j is susceptible, add the edge to the SI list
-                    elif (nodeStates[edge[0]]==2):
+                    elif (nodeStates[edge[1]]==0):
                         siList.append((edge[1],newInfectedNode))
                         
             nodeStates[newInfectedNode] = 2
@@ -188,14 +210,14 @@ def numNodesInState(state):
     
     return numNodesInState_
 
-numNodes = 1000
-numEdges = 5000
+numNodes = 15
+numEdges = 50
 
-exposureRate = 5
-infectionRate = .5
+G = generateRandomGraph(numNodes, numEdges=numEdges)
+
+exposureRate = 10
+infectionRate = 2
 recoveryRate = .5
-
-G = generateRandomGraph(numNodes, numEdges)
 
 log,stats = seirSim(G,exposureRate,infectionRate,recoveryRate,logSim=True, 
               tallyFuncs=[numNodesInState(0),numNodesInState(1),
