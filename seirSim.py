@@ -36,8 +36,9 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
         expRate(: The rate of conversion from Susceptible to Exposed
         infRate: The rate of conversion from Exposed to Infected
         recRate: The rate of conversion from Infected to Removed/Recovered
-        tallyFuncs (float)(optional): Functions to be used as tally statistics
-        during the simulation run
+        tallyFuncs (optional): Functions to be used as tally statistics
+            during the simulation run
+        logSim (optional): Whether or not to record the simulations results
             
     Returns:
         tallyResults: A 2D list containing the tally results
@@ -45,9 +46,6 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
     """
     #Create state array for nodes (0=Susceptible, 1=Exposed, 2=Infectious, 3=Recovered)
     nodeStates = np.zeros(len(G.nodes()))
-    
-    useTally = not tallyFuncs is None
-    tallyStats = []
     
     exposedList = []
     
@@ -64,12 +62,18 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
     #A list of simulation state arrays
     if logSim:
         simStates = []
-        simStates.append(nodeStates.copy())
+        simState = [nodeStates.copy(),siList.copy()]
+        simStates.append(simState)
     
     t = 0
     
+    useTally = not tallyFuncs is None
     
-    print('init::::::'+str(len(infectiousList)))
+    if (useTally):
+        tallyStats = []
+        tallyStats = recordTallyStats(t,simState,tallyFuncs,tallyStats)
+    
+    print('Beginning simulation...')
     #Simulation tick loop
     while (len(siList) > 0):
         
@@ -91,12 +95,14 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
         probEI = infPossible*infRate*len(exposedList)/probDenom
         
         x = random()
-        
+    
         #Produce transition event
         if (x < probSE):
             #S->E algorithm
             #Choose random edge (i,j) between SI
             edge = choice(siList)
+            
+            siList.remove(edge)
             if (edge[0] in infectiousList):
                 newExposedNode = edge[1]
             else:
@@ -105,7 +111,7 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
             #Add new exposed node to exposed list, mark as exposed in state array
             exposedList.append(newExposedNode)
             nodeStates[newExposedNode] = 1
-                
+
         
         elif (x >= probSE and x < probEI):
             #E->I algorithm
@@ -123,7 +129,7 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
                         if ((edge[1],newInfectedNode) in siList):    
                             siList.remove((edge[1],newInfectedNode))
                     #If j is susceptible, add the edge to the SI list
-                    elif (nodeStates[edge[1]]==0):
+                    elif (nodeStates[edge[0]]==2):
                         siList.append((edge[1],newInfectedNode))
                         
             nodeStates[newInfectedNode] = 2
@@ -136,11 +142,12 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
             infectiousList.remove(newRemovedNode)
             nodeStates[newRemovedNode] = 3
             #Remove edges (i,j) from SI list, where i is the newly removed node
-            for edge in siList:
+            for edge in siList.copy():
                 if newRemovedNode in edge:
                     siList.remove(edge)
         
-        simState = [nodeStates,siList]
+        simState = [nodeStates.copy(),siList.copy()]
+        
         if useTally:
             tallyStats = recordTallyStats(t,simState,tallyFuncs,tallyStats)
             
@@ -182,7 +189,7 @@ def numNodesInState(state):
     return numNodesInState_
 
 numNodes = 1000
-numEdges = 4000
+numEdges = 5000
 
 exposureRate = 5
 infectionRate = .5
@@ -195,8 +202,8 @@ log,stats = seirSim(G,exposureRate,infectionRate,recoveryRate,logSim=True,
                           numNodesInState(2),numNodesInState(3)])
 
 for i in range(4):
-    plt.plot(range(len(log)-1),stats[:,i])
-plt.legend(['Susceptible','Exposed','Infected','Recovered'],loc='upper right')
+    plt.plot(range(len(log)),stats[:,i])
+plt.legend(['Susceptible','Exposed','Infected','Removed'],loc='upper right')
     
     
     
