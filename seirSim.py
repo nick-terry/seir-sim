@@ -123,13 +123,20 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
             #S->E algorithm
             #Choose random edge (i,j) between SI
             edge = choice(siList)
+            print('Time: '+str(t))
+            print('Edge: '+str(edge))
             
-            siList.remove(edge)
             if (edge[0] in infectiousList):
                 newExposedNode = edge[1]
             else:
                 newExposedNode = edge[0]
-                
+            
+            #Remove all edges from SI list which contain the newly exposed node
+            for edge in siList.copy():
+                if newExposedNode in edge:
+                    siList.remove(edge)
+            
+            print('New Exposed Node: '+str(newExposedNode))
             #Add new exposed node to exposed list, mark as exposed in state array
             exposedList.append(newExposedNode)
             nodeStates[newExposedNode] = 1
@@ -141,7 +148,10 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
             newInfectedNode = choice(exposedList)
             
             #Remove node from exposed list and add to infected list
+            print('Time: '+str(t))
+            print(exposedList)
             exposedList.remove(newInfectedNode)
+            print(exposedList)
             infectiousList.append(newInfectedNode)
             
             #Check each edge (i,j) of the newly infected node i
@@ -175,7 +185,10 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
             
         if logSim:
             simStates.append(simState)
-            
+        '''
+        print('Time: '+str(t))
+        print(exposedList)
+        '''
     return simStates,np.array(tallyStats)
 
 

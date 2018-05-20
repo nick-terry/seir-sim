@@ -6,11 +6,11 @@ A test script for seir-sim that generates a random contact network and runs the
 simulation
 """
 import matplotlib.pyplot as plt
-from seirSim import all
+from seirSim import generateRandomGraph,seirSim,numNodesInState
 
 
-numNodes = 1000
-numEdges = 5000
+numNodes = 15
+numEdges = 50
 
 G = generateRandomGraph(numNodes, numEdges=numEdges)
 
