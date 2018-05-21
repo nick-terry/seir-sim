@@ -26,15 +26,18 @@ def generateRandomGraph(numNodes, numEdges=None, degreeDist=None):
     Returns:
         G: A networkx graph
     '''
+    print('Generating a random graph with {0} nodes...'.format(numNodes))
     G = nx.Graph()
 
     for i in range(numNodes):
         G.add_node(i)
-
+        
     if (numEdges is None and degreeDist is None):
         raise Exception('You must provide a number or edges or degree distribution')
         
     elif (not numEdges is None):
+        #Choose 2 nodes randomly from a uniform distribution and create an
+        #edge between them
         for i in range(numEdges):
             u,v = choice(range(numNodes)),choice(range(numNodes))
             edges = G.edges()
@@ -44,10 +47,53 @@ def generateRandomGraph(numNodes, numEdges=None, degreeDist=None):
             G.add_edge(u,v)
             
     if (not degreeDist is None):
-        x = random()
+        #Algorithm for generating a random graph with N nodes, each with degree
+        #belonging to distribution D
+        nodes = G.nodes().copy()
+        
+        #Generate the degree of each node from D
+        degrees = []
+        for ind in range(len(nodes)):
+            degrees.append(sampleF(degreeDist))
+            
+        #A 2D array where array[node] = [target degree, degree of the node]
+        nodeToEdgesNeeded = np.array([degrees,  degrees]).transpose()
+
+        #Check each node, and add edges until it has the correct degree
+        while (len(nodes) > 0):
+            #Choose a random node (uniformly)
+            i = nodes[0]
+            
+            #Find all nodes j such that:
+            # 1) (i,j) is not an edge in G
+            # 2) degree(j) < x_j, where x_j is a realization of D
+            
+            inEdgesFn = np.vectorize(lambda x: x not in np.ravel(G.edges(i)))
+            candidateJ = np.where(np.logical_and(nodeToEdgesNeeded[:,1] > 0, inEdgesFn(nodeToEdgesNeeded[:,0])))[0]
+            
+            while nodeToEdgesNeeded[i,1] > 0:
+                #Randomly choose a candidate node j to create a new edge (i,j)
+                j = choice(candidateJ)
+                G.add_edge(i,j)
+                #Update remaining number of edges needed by nodes i and j
+                nodeToEdgesNeeded[i,1] = nodeToEdgesNeeded[i,1] - 1
+                nodeToEdgesNeeded[j,1] = nodeToEdgesNeeded[j,1] - 1
+                
+            nodes.remove(i)
+        
         
         
     return G
+
+def sampleF(F):
+    '''
+    Generate a random realization from the cumulative distribution function F
+    '''
+    x = random()
+    for i in range(F.size):
+        if (F[i,1] > x):
+            return F[i,0]
+
 
 def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
     """
@@ -97,7 +143,7 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
     
     print('Beginning simulation...')
     #Simulation tick loop
-    while (len(siList) + len(exposedList) > 0):
+    while (len(siList) + len(exposedList) + len(infectiousList) > 0):
         
         t = t + 1 
         
@@ -123,8 +169,6 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
             #S->E algorithm
             #Choose random edge (i,j) between SI
             edge = choice(siList)
-            print('Time: '+str(t))
-            print('Edge: '+str(edge))
             
             if (edge[0] in infectiousList):
                 newExposedNode = edge[1]
@@ -136,7 +180,6 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
                 if newExposedNode in edge:
                     siList.remove(edge)
             
-            print('New Exposed Node: '+str(newExposedNode))
             #Add new exposed node to exposed list, mark as exposed in state array
             exposedList.append(newExposedNode)
             nodeStates[newExposedNode] = 1
@@ -148,15 +191,13 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
             newInfectedNode = choice(exposedList)
             
             #Remove node from exposed list and add to infected list
-            print('Time: '+str(t))
-            print(exposedList)
             exposedList.remove(newInfectedNode)
-            print(exposedList)
             infectiousList.append(newInfectedNode)
             
             #Check each edge (i,j) of the newly infected node i
             for edge in G.edges(newInfectedNode):
                     #If j is infected, remove the edge from SI list
+
                     if (nodeStates[edge[1]]==2):
                         if ((edge[1],newInfectedNode) in siList):    
                             siList.remove((edge[1],newInfectedNode))

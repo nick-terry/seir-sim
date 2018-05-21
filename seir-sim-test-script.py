@@ -7,12 +7,17 @@ simulation
 """
 import matplotlib.pyplot as plt
 from seirSim import generateRandomGraph,seirSim,numNodesInState
+import numpy as np
 
 
-numNodes = 15
-numEdges = 50
+numNodes = 1000
+degreeDist = np.array([[1, .1],
+              [2,.4],
+              [3,.6],
+              [4,.7],
+              [5,1]])
 
-G = generateRandomGraph(numNodes, numEdges=numEdges)
+G = generateRandomGraph(numNodes, degreeDist=degreeDist)
 
 exposureRate = 10
 infectionRate = 3
