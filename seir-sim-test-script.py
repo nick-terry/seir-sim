@@ -31,4 +31,4 @@ for i in range(4):
     plt.plot(range(len(log)),stats[:,i])
 plt.legend(['Susceptible','Exposed','Infected','Removed'],loc='upper right')
 plt.xlabel('t')
-plt.ylable('Nodes')
+plt.ylabel('Population')
