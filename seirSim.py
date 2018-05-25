@@ -226,10 +226,7 @@ def seirSim(G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
             
         if logSim:
             simStates.append(simState)
-        '''
-        print('Time: '+str(t))
-        print(exposedList)
-        '''
+            
     return simStates,np.array(tallyStats)
 
 
