@@ -1,3 +1,11 @@
 
+<<<<<<< HEAD
 graph.html
 __pycache__/networkViz.cpython-36.pyc
+=======
+*.pyc
+*.pyc
+*.pyc
+graph.html
+__pycache__/seirSim.cpython-36.pyc
+>>>>>>> network-algorithms
