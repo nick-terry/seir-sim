@@ -63,6 +63,63 @@ class seirSim():
             self.tallyStats = []
             self.recordTallyStats()
     
+    def transitionSE(self):
+        '''
+        S->E algorithm
+        '''
+        #Choose random edge (i,j) between SI
+        edge = choice(self.siList)
+        
+        if (edge[0] in self.infectiousList):
+            newExposedNode = edge[1]
+        else:
+            newExposedNode = edge[0]
+        
+        #Remove all edges from SI list which contain the newly exposed node
+        for edge in self.siList.copy():
+            if newExposedNode in edge:
+                self.siList.remove(edge)
+        
+        #Add new exposed node to exposed list, mark as exposed in state array
+        self.exposedList.append(newExposedNode)
+        self.nodeStates[newExposedNode] = 1
+        
+    def transitionEI(self):
+        '''
+        E->I algorithm
+        '''
+        #Choose a random exposed node to become infectious
+        newInfectedNode = choice(self.exposedList)
+        
+        #Remove node from exposed list and add to infected list
+        self.exposedList.remove(newInfectedNode)
+        self.infectiousList.append(newInfectedNode)
+        
+        #Check each edge (i,j) of the newly infected node i
+        for edge in self.G.edges(newInfectedNode):
+                #If j is infected, remove the edge from SI list
+
+                if (self.nodeStates[edge[1]]==2):
+                    if ((edge[1],newInfectedNode) in self.siList):    
+                        self.siList.remove((edge[1],newInfectedNode))
+                #If j is susceptible, add the edge to the SI list
+                elif (self.nodeStates[edge[1]]==0):
+                    self.siList.append((edge[1],newInfectedNode))
+                    
+        self.nodeStates[newInfectedNode] = 2
+        
+    def transitionIR(self):
+        #I-R algorithm
+        #Choose a random infectious node to remove
+        newRemovedNode = choice(self.infectiousList)
+        #Remove newly removed node from infectious list, update state array
+        self.infectiousList.remove(newRemovedNode)
+        self.nodeStates[newRemovedNode] = 3
+        #Remove edges (i,j) from SI list, where i is the newly removed node
+        for edge in self.siList.copy():
+            if newRemovedNode in edge:
+                self.siList.remove(edge)
+        
     def simulate(self):
         '''
         Runs the SEIR simulation
@@ -98,58 +155,13 @@ class seirSim():
     
             #Produce transition event
             if (x < probSE):
-                #S->E algorithm
-                #Choose random edge (i,j) between SI
-                edge = choice(self.siList)
-                
-                if (edge[0] in self.infectiousList):
-                    newExposedNode = edge[1]
-                else:
-                    newExposedNode = edge[0]
-                
-                #Remove all edges from SI list which contain the newly exposed node
-                for edge in self.siList.copy():
-                    if newExposedNode in edge:
-                        self.siList.remove(edge)
-                
-                #Add new exposed node to exposed list, mark as exposed in state array
-                self.exposedList.append(newExposedNode)
-                self.nodeStates[newExposedNode] = 1
-    
+                self.transitionSE()
             
             elif (x >= probSE and x < probEI+probSE):
-                #E->I algorithm
-                #Choose a random exposed node to become infectious
-                newInfectedNode = choice(self.exposedList)
-                
-                #Remove node from exposed list and add to infected list
-                self.exposedList.remove(newInfectedNode)
-                self.infectiousList.append(newInfectedNode)
-                
-                #Check each edge (i,j) of the newly infected node i
-                for edge in self.G.edges(newInfectedNode):
-                        #If j is infected, remove the edge from SI list
-    
-                        if (self.nodeStates[edge[1]]==2):
-                            if ((edge[1],newInfectedNode) in self.siList):    
-                                self.siList.remove((edge[1],newInfectedNode))
-                        #If j is susceptible, add the edge to the SI list
-                        elif (self.nodeStates[edge[1]]==0):
-                            self.siList.append((edge[1],newInfectedNode))
-                            
-                self.nodeStates[newInfectedNode] = 2
+                self.transitionEI()
             
             elif (recPossible):
-                #I-R algorithm
-                #Choose a random infectious node to remove
-                newRemovedNode = choice(self.infectiousList)
-                #Remove newly removed node from infectious list, update state array
-                self.infectiousList.remove(newRemovedNode)
-                self.nodeStates[newRemovedNode] = 3
-                #Remove edges (i,j) from SI list, where i is the newly removed node
-                for edge in self.siList.copy():
-                    if newRemovedNode in edge:
-                        self.siList.remove(edge)
+                self.transitionIR()
             
             self.simState = [self.nodeStates.copy(),self.siList.copy()]
             
