@@ -143,10 +143,11 @@ def generateRandomGraph(numNodes, numEdges=None, degreeDist=None):
             # 2) degree(j) < x_j, where x_j is the target degree of j
             # 3) j != i
             inEdgesFn = np.vectorize(lambda x: x not in np.ravel(G.edges(i)))
-            print(nodeToEdgesNeeded[:,0] != i)
             candidateJ = list(np.where(np.logical_and(nodeToEdgesNeeded[:,1] > 0, inEdgesFn(nodeToEdgesNeeded[:,0])))[0])
+            '''
             if i in candidateJ:
                 candidateJ.remove(i)  
+                '''
             
             while nodeToEdgesNeeded[i,1] > 0:
                 #Randomly choose a candidate node j to create a new edge (i,j)

@@ -9,3 +9,6 @@ __pycache__/networkViz.cpython-36.pyc
 graph.html
 __pycache__/seirSim.cpython-36.pyc
 >>>>>>> network-algorithms
+*.pyc
+*.pyc
+*.pyc

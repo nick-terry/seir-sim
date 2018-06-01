@@ -10,7 +10,7 @@ from seirSim import seirSim,numNodesInState
 from networkalgs import generateRandomGraph
 import numpy as np
 
-numNodes = 10
+numNodes = 1000
 degreeDist = np.array([[1, .1],
               [2,.4],
               [3,.6],
@@ -23,9 +23,11 @@ exposureRate = 10
 infectionRate = 3
 recoveryRate = .5
 
-log,stats = seirSim(G,exposureRate,infectionRate,recoveryRate,logSim=True, 
+simulation = seirSim(G,exposureRate,infectionRate,recoveryRate,logSim=True, 
               tallyFuncs=[numNodesInState(0),numNodesInState(1),
                           numNodesInState(2),numNodesInState(3)])
+
+log,stats = simulation.simulate()
 
 for i in range(4):
     plt.plot(range(len(log)),stats[:,i])
