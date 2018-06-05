@@ -9,7 +9,7 @@ discretized SEIR model
 from random import random,choice
 import numpy as np
 
-class seirSim():
+class SeirSim():
     """
     Creates a simulation for the SEIR model for infectious disease
     
@@ -27,7 +27,7 @@ class seirSim():
                      2:'Infectious',
                      3:'Recovered'}
     
-    def __init__(self,G,expRate,infRate,recRate,tallyFuncs=None,logSim=False):
+    def __init__(self,G,expRate,infRate,recRate,policiesList=None,tallyFuncs=None,logSim=False):
         self.G = G
         self.expRate = expRate
         self.infRate = infRate
@@ -41,13 +41,25 @@ class seirSim():
     
         self.infectiousList = []
         self.siList = []
-    
+        
+        if not policiesList is None:
+            for policy in policiesList:
+                #assert policy is Policy
+                if policy.runOnInit:
+                    policy.execute(self)
+                    
         #Mark a single node as infectious
-        sourceNode = choice(G.nodes())
+        validSourceNodes = np.where(self.nodeStates==0)
+        sourceNode = choice(validSourceNodes[0])
+        print(self.nodeStates.size)
+        print(validSourceNodes)
+        print(sourceNode)
+        print(sourceNode)
         self.nodeStates[sourceNode] = 2
         self.infectiousList.append(sourceNode)
         for edge in G.edges(sourceNode):
-            self.siList.append(edge)
+            if self.nodeStates[edge[1]]==0:
+                self.siList.append(edge)
         
         #A list of simulation state arrays
         if self.logSim:
@@ -183,17 +195,3 @@ class seirSim():
             tResults.append(f(self.simState))
         self.tallyStats.append(tResults)
         return self.tallyStats
-                            
-def numNodesInState(state):
-    '''
-    Decorator function for creating tally statistics for nodes in
-    a certain state
-    '''
-    def numNodesInState_(simState):
-        '''
-        Tally statistic which computes the number of nodes in state at time t
-        '''
-        n = len(simState[0])
-        return np.sum(np.where(simState[0]==state,np.ones(n),np.zeros(n)))
-    
-    return numNodesInState_

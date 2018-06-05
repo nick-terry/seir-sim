@@ -6,9 +6,13 @@ A test script for seir-sim that generates a random contact network and runs the
 simulation
 """
 import matplotlib.pyplot as plt
-from seirSim import seirSim,numNodesInState
-from networkalgs import generateRandomGraph
 import numpy as np
+
+from seirSim import SeirSim
+from policies import vaccinateTopNDIL
+from tallyFuncs import numNodesInState
+from networkalgs import generateRandomGraph
+
 
 numNodes = 1000
 degreeDist = np.array([[1, .1],
@@ -23,7 +27,11 @@ exposureRate = 10
 infectionRate = 3
 recoveryRate = .5
 
-simulation = seirSim(G,exposureRate,infectionRate,recoveryRate,logSim=True, 
+vaccPolicy = vaccinateTopNDIL(200)
+
+simulation = SeirSim(G,exposureRate,infectionRate,recoveryRate,
+                     policiesList=[vaccPolicy],
+                     logSim=True, 
               tallyFuncs=[numNodesInState(0),numNodesInState(1),
                           numNodesInState(2),numNodesInState(3)])
 
