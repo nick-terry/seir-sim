@@ -27,13 +27,17 @@ class SeirSim():
                      2:'Infectious',
                      3:'Recovered'}
     
-    def __init__(self,G,expRate,infRate,recRate,policiesList=None,tallyFuncs=None,logSim=False):
+    def __init__(self,G,expRate,infRate,recRate,
+                 rngSeed=None,
+                 tallyFuncs=None,
+                 logSim=False):
         self.G = G
         self.expRate = expRate
         self.infRate = infRate
         self.recRate = recRate
         self.tallyFuncs = tallyFuncs
         self.logSim = logSim
+        self.rngSeed = rngSeed
         
         self.nodeStates = np.zeros(len(G.nodes()))
     
@@ -41,20 +45,15 @@ class SeirSim():
     
         self.infectiousList = []
         self.siList = []
-        
-        if not policiesList is None:
-            for policy in policiesList:
-                #assert policy is Policy
-                if policy.runOnInit:
-                    policy.execute(self)
                     
+        if not self.rngSeed is None:
+            random.seed(self.rngSeed)
+            
         #Mark a single node as infectious
         validSourceNodes = np.where(self.nodeStates==0)
         sourceNode = choice(validSourceNodes[0])
-        print(self.nodeStates.size)
-        print(validSourceNodes)
-        print(sourceNode)
-        print(sourceNode)
+        self.sourceNode = sourceNode
+        
         self.nodeStates[sourceNode] = 2
         self.infectiousList.append(sourceNode)
         for edge in G.edges(sourceNode):
@@ -74,6 +73,12 @@ class SeirSim():
         if (self.useTally):
             self.tallyStats = []
             self.recordTallyStats()
+    
+    def __copy__(self):
+        return SeirSim(self.G,self.expRate,self.infRate,self.recRate,
+                 rngSeed=self.rngSeed,
+                 tallyFuncs=self.tallyFuncs,
+                 logSim=self.logSim)
     
     def transitionSE(self):
         '''
@@ -132,7 +137,7 @@ class SeirSim():
             if newRemovedNode in edge:
                 self.siList.remove(edge)
         
-    def simulate(self):
+    def simulate(self,policies=None):
         '''
         Runs the SEIR simulation
         
@@ -142,7 +147,14 @@ class SeirSim():
         tallyResults: A 2D list containing the tally results
         '''
         print('Beginning simulation...')
-    
+        self.policies = policies
+            
+        #Execute any policies with runOnInit=True 
+        if not self.policies is None:
+            for policy in self.policies:
+                if not policy is None and policy.runOnInit:
+                    policy.execute(self)
+        
         #Simulation tick loop
         while (len(self.siList) + len(self.exposedList) + len(self.infectiousList) > 0):
         
@@ -182,6 +194,11 @@ class SeirSim():
                 
             if self.logSim:
                 self.simStates.append(self.simState)
+            
+            if not self.policies is None:
+                for policy in self.policies:
+                    if not policy is None and policy.runEachTimestep:
+                        policy.execute(self)
             
         return self.simStates,np.array(self.tallyStats)
 

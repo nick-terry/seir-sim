@@ -5,6 +5,7 @@ Contains policies for use with seir-sim
 Policies are inputs to the simulation which affects its evolution
 """
 import numpy as np
+from random import choice
 
 import networkalgs
 
@@ -41,12 +42,43 @@ class vaccinateTopNDIL(Policy):
             
         def execute(self,simulation):
             nodeDIL = networkalgs.DIL(simulation.G)
-            topN = []
+            '''
+            Ensure source node is not vaccinated. This ensures the simulation
+            can actually run, and is justified by the fact that giving a
+            vaccination to someone already infected by a disease does not cure
+            the disease
+            '''
+            nodeDIL[simulation.sourceNode] = 0
             
             for i in range(self.N):
                 topNode = np.argmax(nodeDIL)
-                topN.append(topNode)
                 nodeDIL[topNode] = 0
+                simulation.nodeStates[topNode] = 3
+                
+class vaccinateNRandom(Policy):
+        '''
+        Vaccinate N nodes at random
+        
+        Vaccinating a node changes its state from Susceptible to Removed
+        
+        Parameters:
+            N: The number of top nodes to vaccinate
+        '''
+        def __init__(self,N):
+            Policy.__init__(self,runOnInit=True,runEachTimestep=False)
+            self.N = N
             
-            for node in topN:
+        def execute(self,simulation):
+            nodes = list(range(len(simulation.G.nodes())))
+            '''
+            Ensure source node is not vaccinated. This ensures the simulation
+            can actually run, and is justified by the fact that giving a
+            vaccination to someone already infected by a disease does not cure
+            the disease
+            '''
+            nodes.remove(simulation.sourceNode)
+            
+            for i in range(self.N):
+                node = choice(nodes)
                 simulation.nodeStates[node] = 3
+                nodes.remove(node)
