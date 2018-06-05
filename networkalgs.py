@@ -65,7 +65,11 @@ def DIL(G):
         Assumes I_ij has already been computed
         '''
         degi = G.degree(i)
-        return edgeToIWArray[i,j,0]*(degi-1)/(degi+G.degree(j)-2)
+        degj = G.degree(j)
+        if degi - degj == 0:
+            return 0
+        else:
+            return edgeToIWArray[i,j,0]*(degi-1)/((degi+degj)-2)
     
     def L(i):
         return G.degree(i)+sum(edgeToIWArray[edge[0],edge[1],1] for edge in G.edges(i))
