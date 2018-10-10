@@ -7,6 +7,8 @@ Created on Thu May 24 21:46:25 2018
 import numpy as np
 import networkx as nx
 from random import random,choice
+from math import log1p
+from scipy.stats import norm
 
 def DIL(G):
     '''
@@ -88,80 +90,29 @@ def DIL(G):
     
     return nodeToL
 
-def generateRandomGraph(numNodes, numEdges=None, degreeDist=None):
+def generateRandomGraph(numNodes, prob=None):
     '''
     Generates a random graph G with given number of Nodes and either the given
-    number of edges, or nodes with the given degree distribution
+    probability probability p in the Erdos-Renyi G(n,p) model, or nodes with 
+    the given degree distribution. 
+    
     
     Parameters:
-        numNodes: The number of nodes on G
-        numEdges (optional): The number of edges on G
-        degreeDist (optional): The cumulative distribution function F giving the
-            probability that a node N has degree D <= x. Takes the form of a 
-            list of a 2D numpy array, where the 0th column are values x which 
-            can be taken on by D, and 1st column are the P(D<=x)
+        numNodes: The number of nodes, n, on G
+        prob (optional): The probability parameter p in the Erdos-Renyi random
+            G(n,p) model. If prob is not provided, p=ln(n)/n will be used,
+            as this is the threshold value for which G will almost surely be
+            connected
     
     Returns:
         G: A networkx graph
     '''
     print('Generating a random graph with {0} nodes...'.format(numNodes))
-    G = nx.Graph()
-
-    for i in range(numNodes):
-        G.add_node(i)
+    
+    if (prob is None):
+        prob = log1p(numNodes)/numNodes
         
-    if (numEdges is None and degreeDist is None):
-        raise Exception('You must provide a number or edges or degree distribution')
-        
-    elif (not numEdges is None):
-        #Choose 2 nodes randomly from a uniform distribution and create an
-        #edge between them
-        for i in range(numEdges):
-            u,v = choice(range(numNodes)),choice(range(numNodes))
-            edges = G.edges()
-            
-            while u==v or (u,v) in edges or (v,u) in edges:
-                u,v = choice(range(numNodes)),choice(range(numNodes))    
-            G.add_edge(u,v)
-            
-    if (not degreeDist is None):
-        #Algorithm for generating a random graph with N nodes, each with degree
-        #belonging to distribution D
-        nodes = G.nodes().copy()
-        
-        #Generate the degree of each node from D
-        degrees = []
-        for ind in range(len(nodes)):
-            degrees.append(sampleF(degreeDist))
-            
-        #A 2D array where array[node] = [target degree, degree of the node]
-        nodeToEdgesNeeded = np.array([degrees,  degrees]).transpose()
-
-        #Check each node, and add edges until it has the correct degree
-        while (len(nodes) > 0):
-            #Choose a random node (uniformly)
-            i = nodes[0]
-            
-            #Find all nodes j such that:
-            # 1) (i,j) is not an edge in G
-            # 2) degree(j) < x_j, where x_j is the target degree of j
-            # 3) j != i
-            inEdgesFn = np.vectorize(lambda x: x not in np.ravel(G.edges(i)))
-            candidateJ = list(np.where(np.logical_and(nodeToEdgesNeeded[:,1] > 0, inEdgesFn(nodeToEdgesNeeded[:,0])))[0])
-            '''
-            if i in candidateJ:
-                candidateJ.remove(i)  
-                '''
-            
-            while nodeToEdgesNeeded[i,1] > 0:
-                #Randomly choose a candidate node j to create a new edge (i,j)
-                j = int(choice(candidateJ))
-                G.add_edge(i,j)
-                #Update remaining number of edges needed by nodes i and j
-                nodeToEdgesNeeded[i,1] = nodeToEdgesNeeded[i,1] - 1
-                nodeToEdgesNeeded[j,1] = nodeToEdgesNeeded[j,1] - 1
-                
-            nodes.remove(i)
+    G = nx.fast_gnp_random_graph(numNodes,prob)
         
     return G
 
@@ -173,3 +124,61 @@ def sampleF(F):
     for i in range(F.size):
         if (F[i,1] > x):
             return int(F[i,0])    
+        
+def twoStepHeuristic(G,n1,n2):
+    '''
+    Use the two step heuristic algorithm described by K. Avrachenkov et al to
+    search for the n nodes with highest degree.
+    
+    Perform the two step heuristic algorithm with
+    n1 chosen for optimal performance according to the paper
+    
+    Parameters:
+        G: The graph to perform the heuristic search on
+        n1: The number of nodes to sample from G for the 1st step
+        n2: The culling parameter for the 2nd step of the TSH algorithm
+    
+    Returns:
+        topNodes: A list of the top-k nodes of G as found by the TSH algorithm
+    '''
+    nodes = G.nodes()
+    S = np.zeros([len(G.nodes())])
+    for i in range(n1):
+        v = choice(nodes)
+        for neighbor in G.neighbors(v):
+            S[neighbor] += 1
+    topNodes = np.argsort(S)[-n2:]
+
+    return topNodes
+
+def acquaintanceN(G,n):
+    '''
+    Use the acquaintance algorithm to select n nodes to vaccinate. This process
+    biases the selected nodes to be of higher degree. Based on
+    paper by Cohen, Havlin and ben Avraham.
+    
+    Parameters:
+        G: The graph to perform the heuristic search on
+        n: The number of nodes to sample
+    
+    Returns:
+        topNodes: A list of nodes to vaccinate
+    '''
+    nodes = G.nodes()
+    selectedNodes = []
+    
+    for i in range(n):
+        node = choice(nodes)
+        neighbors = G.neighbors(node)
+        neighbor = choice(neighbors)
+        while neighbor in selectedNodes and len(neighbors)>0:
+            neighbors.remove(neighbor)
+            neighbor = choice(neighbors)
+        if neighbor in selectedNodes:
+            pass
+        else:
+            selectedNodes.append(neighbor)
+            
+    return selectedNodes
+        
+        

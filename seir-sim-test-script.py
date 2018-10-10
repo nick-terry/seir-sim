@@ -6,30 +6,31 @@ A test script for seir-sim that generates a random contact network and runs the
 simulation
 """
 import matplotlib.pyplot as plt
-import numpy as np
 
 from experiment import Experiment
 from seirSim import SeirSim
-from policies import vaccinateTopNDIL,vaccinateNRandom
+from policies import vaccinateTopNDIL,vaccinateNRandom,vaccinateTopNDegree,vaccinateTopNTSH, vaccinateNAcquaintance
 from tallyFuncs import numNodesInState
 from networkalgs import generateRandomGraph
+import networkViz as nv
+from math import ceil,floor
 
 
 numNodes = 1000
-degreeDist = np.array([[1, .1],
-              [2,.4],
-              [3,.6],
-              [4,.7],
-              [5,1]])
 
-G = generateRandomGraph(numNodes, degreeDist=degreeDist)
+G = generateRandomGraph(numNodes)
 
 exposureRate = 10
 infectionRate = 3
 recoveryRate = .5
 
-DILPolicy = vaccinateTopNDIL(200)
-randomVaccPolicy = vaccinateNRandom(200)
+numVaccinated = 200
+
+DILPolicy = vaccinateTopNDIL(numVaccinated)
+randomVaccPolicy = vaccinateNRandom(numVaccinated)
+DegPolicy = vaccinateTopNDegree(numVaccinated)
+tshPolicy = vaccinateTopNTSH(numVaccinated)
+acquPolicy = vaccinateNAcquaintance(numVaccinated)
 
 simulation = SeirSim(G,exposureRate,infectionRate,recoveryRate,
                      logSim=True, 
@@ -38,25 +39,31 @@ simulation = SeirSim(G,exposureRate,infectionRate,recoveryRate,
 
 exper = Experiment(simulation)
 
-logList,statsList = exper.compare([[None],[randomVaccPolicy],[DILPolicy]])
+logList,statsList = exper.compare([[None],[randomVaccPolicy],
+                                   [DegPolicy],[DILPolicy],
+                                   [tshPolicy],[acquPolicy]])
 
-def plotResults(axes,log,stats,title=None):
+def plotResults(axes,log,stats,title=None,legend=False):
     for i in range(4):
         axes.plot(range(len(log)),stats[:,i])
-    axes.legend(['Susceptible','Exposed','Infected','Removed'],loc='upper right')
+    if legend:
+        axes.legend(['Susceptible','Exposed','Infected','Removed'],loc='upper right')
     plt.xlabel('t')
     plt.ylabel('Population')
     if type(title) == str:
         plt.title(title)
 
 def plotExperiment(experiment,titles):
-    f = plt.figure(figsize=(10,3))
+    f = plt.figure(figsize=(12,3))
     axesList = []
     numSims = len(experiment.stats)
     for i in range(numSims):
-        axesList.append(f.add_subplot('1{0}{1}'.format(numSims,i)))
+        axesList.append(f.add_subplot('{0}{1}{2}'.format(ceil(numSims/4),
+                                      4,i)))
         plotResults(axesList[i],experiment.logs[i],experiment.stats[i],
                     titles[i])
 
-titles = ['No Vaccination','Random Vaccination','DIL-Ranked Vaccination']
+titles = ['No Vaccination','Random Vaccination',
+          'Degree-Ranked Vaccination','DIL-Ranked Vaccination',
+          'TSH-Ranked Vaccination','Acquaintance Vaccination']
 plotExperiment(exper,titles)
