@@ -171,9 +171,10 @@ def acquaintanceN(G,n):
         node = choice(nodes)
         neighbors = G.neighbors(node)
         neighbor = choice(neighbors)
+        neighbors.remove(neighbor)
         while neighbor in selectedNodes and len(neighbors)>0:
-            neighbors.remove(neighbor)
             neighbor = choice(neighbors)
+            neighbors.remove(neighbor)
         if neighbor in selectedNodes:
             pass
         else:

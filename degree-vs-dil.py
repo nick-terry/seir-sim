@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Thu Oct 11 22:32:32 2018
+
+@author: pnter
+"""
+
+# -*- coding: utf-8 -*-
+"""
 @author: Nick Terry
 
 A test script for seir-sim that generates a random contact network and runs the
@@ -13,7 +20,6 @@ from policies import vaccinateTopNDIL,vaccinateNRandom,vaccinateTopNDegree,vacci
 from tallyFuncs import numNodesInState
 from networkalgs import generateRandomGraph
 from plotting import plotExperiment
-import networkViz as nv
 
 
 numNodes = 10000
@@ -26,13 +32,10 @@ exposureRate = .45 #Beta
 infectionRate = 1/5.3 #Sigma
 recoveryRate = 1/5.61 #Gamma
 
-numVaccinated = 1000
+numVaccinated = 2000
 
 DILPolicy = vaccinateTopNDIL(numVaccinated)
-randomVaccPolicy = vaccinateNRandom(numVaccinated)
 DegPolicy = vaccinateTopNDegree(numVaccinated)
-tshPolicy = vaccinateTopNTSH(numVaccinated)
-acquPolicy = vaccinateNAcquaintance(numVaccinated)
 
 simulation = SeirSim(G,exposureRate,infectionRate,recoveryRate,
                      logSim=True, 
@@ -41,11 +44,8 @@ simulation = SeirSim(G,exposureRate,infectionRate,recoveryRate,
 
 exper = Experiment(simulation)
 
-logList,statsList = exper.compare([[None],[randomVaccPolicy],
-                                   [DegPolicy],[DILPolicy],
-                                   [tshPolicy],[acquPolicy]])
+logList,statsList = exper.compare([[DegPolicy],[DILPolicy],])
 
-titles = ['No Vaccination','Random Vaccination',
-          'Degree-Ranked Vaccination','DIL-Ranked Vaccination',
-          'TSH-Ranked Vaccination','Acquaintance Vaccination']
+titles = ['Degree-Ranked Vaccination','DIL-Ranked Vaccination']
+
 plotExperiment(exper,titles)
