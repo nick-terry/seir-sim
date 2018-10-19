@@ -107,12 +107,14 @@ def generateRandomGraph(numNodes, prob=None):
     Returns:
         G: A networkx graph
     '''
-    print('Generating a random graph with {0} nodes...'.format(numNodes))
+    #print('Generating a random graph with {0} nodes...'.format(numNodes))
     
     if (prob is None):
         prob = log1p(numNodes)/numNodes
         
     G = nx.fast_gnp_random_graph(numNodes,prob)
+    while not nx.is_connected(G):
+        G = nx.fast_gnp_random_graph(numNodes,prob)
         
     return G
 
@@ -167,18 +169,25 @@ def acquaintanceN(G,n):
     nodes = G.nodes()
     selectedNodes = []
     
-    for i in range(n):
+    def surveyNodeForNeighbor(nodes):
         node = choice(nodes)
         neighbors = G.neighbors(node)
         neighbor = choice(neighbors)
         neighbors.remove(neighbor)
+        
         while neighbor in selectedNodes and len(neighbors)>0:
             neighbor = choice(neighbors)
             neighbors.remove(neighbor)
+        
         if neighbor in selectedNodes:
-            pass
+            nodes.remove(node)
+            return surveyNodeForNeighbor(nodes)
         else:
-            selectedNodes.append(neighbor)
+            return(neighbor)
+        
+    for i in range(n):
+        nodeToVacc = surveyNodeForNeighbor(nodes)
+        selectedNodes.append(nodeToVacc)
             
     return selectedNodes
         

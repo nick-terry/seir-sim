@@ -14,7 +14,7 @@ simulation
 """
 from experiment import Experiment
 from seirSim import SeirSim
-from policies import vaccinateTopNDIL,vaccinateTopNDegree,vaccinateNRandom
+from policies import vaccinateTopNTSH,vaccinateNAcquaintance,vaccinateNRandom
 from tallyFuncs import numNodesInState
 from networkalgs import generateRandomGraph
 from plotting import plotExperiment
@@ -31,12 +31,12 @@ infectionRate = 1/5.3 #Sigma
 recoveryRate = 1/5.61 #Gamma
 
 numVaccinated = 500
-numIterations = 500
+numIterations = 100
 
 RandomPolicy = vaccinateNRandom(numVaccinated)
-DILPolicy = vaccinateTopNDIL(numVaccinated)
-DegPolicy = vaccinateTopNDegree(numVaccinated)
-policies = [[RandomPolicy],[DegPolicy],[DILPolicy]]
+TSHPolicy = vaccinateTopNTSH(numVaccinated)
+AcqPolicy = vaccinateNAcquaintance(numVaccinated)
+policies = [[RandomPolicy],[TSHPolicy],[AcqPolicy]]
 #Store statistics on proportion of population infected (Average,Var)
 proportionInfected = np.zeros([numIterations,len(policies),2])
 #Store count of # nodes infected in each simulation
@@ -64,7 +64,7 @@ for iteration in range(numIterations):
                                    np.ones(numNodes),np.zeros(numNodes)))
         numInfected[iteration,policy] = numRemoved - numVaccinated
 
-titles = ['Random Immunization','Degree-Ranked Immunization','DIL-Ranked Immunization']
+titles = ['Random Immunization','Two-Step Heuristic Immunization','Acquaintance Immunization']
 
 #plotExperiment(exper,titles)
 ax = pl.subplot(1,1,1)
@@ -86,7 +86,7 @@ ax.legend(titles,loc='upper center', bbox_to_anchor=(0.5, -0.15),
 pl.ylabel('Mean Proportion of Population Infected')
 pl.xlabel('Simulation Replication #')
 
-pl.title('Comparison of Random, Degree-Ranked, and DIL-Ranked Immunization,\n K={0}'.format(
+pl.title('Comparison of Random, TSH, and Acquaintance Immunization,\n K={0}'.format(
         numVaccinated))
 
 pl.show()

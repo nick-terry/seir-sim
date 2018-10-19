@@ -146,7 +146,7 @@ class SeirSim():
             each time step of the simulation
         tallyResults: A 2D list containing the tally results
         '''
-        print('Beginning simulation...')
+        #print('Beginning simulation...')
         self.policies = policies
             
         #Execute any policies with runOnInit=True 
