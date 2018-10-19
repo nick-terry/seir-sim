@@ -5,6 +5,6 @@ The SEIR model is an important extension of the SIR model for the spread of infe
 
 seir-sim uses a constant recovery rate algorithm to update the network each time step. The constant recovery rate algorithm is preferable to the constant disease duration variation, as its results are more readily comparable to analytical solutions of the ODE SEIR model (Holme, 2014). 
 
-I used this simulation to evaluate the effectiveness some different algorithms for targeted immunization.
+I used this simulation to evaluate the effectiveness some different algorithms for targeted immunization. You can read about this project [here](https://nickterryor.wordpress.com/infectious-disease-summary).
 
 ![none](https://github.com/nick-terry/seir-sim/blob/master/example_plot.png "A plot of population levels of each state over time for an SEIR simulation")
